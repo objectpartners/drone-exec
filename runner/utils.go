@@ -87,8 +87,8 @@ func toEnv(s *State) []string {
 
 	// environment variables specific to the pull request
 	if s.Build.Event == plugin.EventPull {
-		envs = append(envs, fmt.Sprintf("CI_PULL_REQUEST=%d", pullRegexp.FindString(s.Build.Ref)))
-		envs = append(envs, fmt.Sprintf("DRONE_PULL_REQUEST=%d", pullRegexp.FindString(s.Build.Ref)))
+		envs = append(envs, fmt.Sprintf("CI_PULL_REQUEST=%s", pullRegexp.FindString(s.Build.Ref)))
+		envs = append(envs, fmt.Sprintf("DRONE_PULL_REQUEST=%s", pullRegexp.FindString(s.Build.Ref)))
 	}
 
 	// environment variables for the current matrix axis
