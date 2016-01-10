@@ -467,7 +467,7 @@ func Test_Funcs(t *testing.T) {
 						})
 
 						g.It("escalates the node", func() {
-							Escalate(node)
+							Escalate(node, DefaultEscalate)
 							g.Assert(node.Privileged).Equal(true)
 							g.Assert(node.Volumes).Equal([]string(nil))
 							g.Assert(node.Net).Equal(``)
@@ -475,7 +475,7 @@ func Test_Funcs(t *testing.T) {
 						})
 
 						g.It("does not error", func() {
-							g.Assert(Escalate(node)).Equal(nil)
+							g.Assert(Escalate(node, DefaultEscalate)).Equal(nil)
 						})
 					})
 
@@ -485,7 +485,7 @@ func Test_Funcs(t *testing.T) {
 						})
 
 						g.It("escalates the node", func() {
-							Escalate(node)
+							Escalate(node, DefaultEscalate)
 							g.Assert(node.Privileged).Equal(true)
 							g.Assert(node.Volumes).Equal([]string(nil))
 							g.Assert(node.Net).Equal(``)
@@ -493,7 +493,7 @@ func Test_Funcs(t *testing.T) {
 						})
 
 						g.It("does not error", func() {
-							g.Assert(Escalate(node)).Equal(nil)
+							g.Assert(Escalate(node, DefaultEscalate)).Equal(nil)
 						})
 					})
 
@@ -503,7 +503,7 @@ func Test_Funcs(t *testing.T) {
 						})
 
 						g.It("escalates the node", func() {
-							Escalate(node)
+							Escalate(node, DefaultEscalate)
 							g.Assert(node.Privileged).Equal(true)
 							g.Assert(node.Volumes).Equal([]string(nil))
 							g.Assert(node.Net).Equal(``)
@@ -511,7 +511,7 @@ func Test_Funcs(t *testing.T) {
 						})
 
 						g.It("does not error", func() {
-							g.Assert(Escalate(node)).Equal(nil)
+							g.Assert(Escalate(node, DefaultEscalate)).Equal(nil)
 						})
 					})
 				})
@@ -523,7 +523,7 @@ func Test_Funcs(t *testing.T) {
 					})
 
 					g.It("does not alter the node", func() {
-						Escalate(node)
+						Escalate(node, DefaultEscalate)
 						g.Assert(node.Privileged).Equal(false)
 						g.Assert(node.Volumes).Equal([]string{`some stuff`})
 						g.Assert(node.Net).Equal(`someNet`)
@@ -531,7 +531,7 @@ func Test_Funcs(t *testing.T) {
 					})
 
 					g.It("does not error", func() {
-						g.Assert(Escalate(node)).Equal(nil)
+						g.Assert(Escalate(node, DefaultEscalate)).Equal(nil)
 					})
 				})
 			})
@@ -542,7 +542,7 @@ func Test_Funcs(t *testing.T) {
 				})
 
 				g.It("does not error", func() {
-					g.Assert(Escalate(node)).Equal(nil)
+					g.Assert(Escalate(node, DefaultEscalate)).Equal(nil)
 				})
 			})
 		})
@@ -556,7 +556,7 @@ func Test_Funcs(t *testing.T) {
 
 			// Note: this should probably return a type error
 			g.It("does not error", func() {
-				g.Assert(Escalate(node)).Equal(nil)
+				g.Assert(Escalate(node, DefaultEscalate)).Equal(nil)
 			})
 		})
 	})

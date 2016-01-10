@@ -148,7 +148,7 @@ func Exec(payload Payload, opt Options, outw, errw io.Writer) error {
 		parser.SanitizeFunc(payload.Repo.IsTrusted), //&& !plugin.PullRequest(payload.Build)
 		parser.CacheFunc(payload.Repo.FullName),
 		parser.DebugFunc(yaml.ParseDebugString(payload.Yaml)),
-		parser.Escalate,
+		parser.EscalateFunc(payload.System.Escalates),
 		parser.HttpProxy,
 		parser.DefaultNotifyFilter,
 	}

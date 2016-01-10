@@ -12,6 +12,7 @@ import (
 var (
 	ErrImageMissing   = errors.New("Yaml must specify an image for every step")
 	ErrImageWhitelist = errors.New("Yaml must specify am image from the white-list")
+	DefaultEscalate   = []string{"plugins/drone-docker", "plugins/drone-ecr", "plugins/drone-gcr"}
 )
 
 const (
@@ -68,25 +69,33 @@ func ImageMatch(n Node, patterns []string) error {
 	case NodeBuild, NodeCompose:
 		return nil
 	}
+	match := imageMatch(d.Image, patterns, []string{DefaultMatch})
 	if len(patterns) == 0 || patterns[0] == "" {
 		patterns = []string{DefaultMatch}
-	}
-	match := false
-	for _, pattern := range patterns {
-		if pattern == d.Image {
-			match = true
-			break
-		}
-		ok, err := filepath.Match(pattern, d.Image)
-		if ok && err == nil {
-			match = true
-			break
-		}
 	}
 	if !match {
 		return fmt.Errorf("Plugin %s is not in the whitelist", d.Image)
 	}
 	return nil
+}
+
+func imageMatch(image string, patterns []string, defaultPattern []string) bool {
+	if len(patterns) == 0 || patterns[0] == "" {
+		patterns = defaultPattern
+	}
+	match := false
+	for _, pattern := range patterns {
+		if pattern == image {
+			match = true
+			break
+		}
+		ok, err := filepath.Match(pattern, image)
+		if ok && err == nil {
+			match = true
+			break
+		}
+	}
+	return match
 }
 
 func ImageMatchFunc(patterns []string) RuleFunc {
@@ -139,13 +148,13 @@ func SanitizeFunc(trusted bool) RuleFunc {
 
 // Escalate escalates a Docker Node to run in privileged mode if
 // the plugin is whitelisted.
-func Escalate(n Node) error {
+func Escalate(n Node, patterns []string) error {
 	d, ok := n.(*DockerNode)
 	if !ok {
 		return nil
 	}
 	image := strings.Split(d.Image, ":")
-	if d.NodeType == NodePublish && (image[0] == "plugins/drone-docker" || image[0] == "plugins/drone-gcr" || image[0] == "plugins/drone-ecr") {
+	if d.NodeType == NodePublish && imageMatch(image[0], patterns, DefaultEscalate) {
 
 		d.Privileged = true
 		d.Volumes = nil
@@ -154,6 +163,12 @@ func Escalate(n Node) error {
 		//d.Volumes = []string{"/lib/modules:/lib/modules"}
 	}
 	return nil
+}
+
+func EscalateFunc(patterns []string) RuleFunc {
+	return func(n Node) error {
+		return Escalate(n, patterns)
+	}
 }
 
 func DefaultNotifyFilter(n Node) error {
