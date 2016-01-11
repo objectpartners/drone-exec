@@ -121,7 +121,7 @@ func expectMatch() {
 func maybeResolveImage() {}
 
 func maybeEscalate(conf dockerclient.ContainerConfig, node *parser.DockerNode) {
-	if node.Image == "plugins/drone-docker" || node.Image == "plugins/drone-gcr" {
+	if node.Image == "plugins/drone-docker" || node.Image == "plugins/drone-gcr" || node.Image == "plugins/drone-ecr" {
 		return
 	}
 	conf.Volumes = nil
