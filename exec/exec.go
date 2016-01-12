@@ -100,7 +100,7 @@ func Exec(payload Payload, opt Options, outw, errw io.Writer) error {
 			// deploy and notify tests.
 			opt.Deploy = false
 			opt.Notify = false
-			log.Debugln("Unable to validate Yaml checksum.", sec.Checksum)
+			log.Errorln("Unable to validate Yaml checksum.", sec.Checksum)
 		}
 	}
 
