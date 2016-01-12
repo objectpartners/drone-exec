@@ -4,7 +4,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/drone/drone-plugin-go/plugin"
+	"github.com/drone/drone-go/drone"
 	"github.com/samalba/dockerclient"
 )
 
@@ -12,12 +12,12 @@ import (
 type State struct {
 	sync.Mutex
 
-	Repo      *plugin.Repo
-	Build     *plugin.Build
-	BuildLast *plugin.Build
-	Job       *plugin.Job
-	System    *plugin.System
-	Workspace *plugin.Workspace
+	Repo      *drone.Repo
+	Build     *drone.Build
+	BuildLast *drone.Build
+	Job       *drone.Job
+	System    *drone.System
+	Workspace *drone.Workspace
 
 	// Client is an instance of the Docker client
 	// used to spawn container tasks.
@@ -35,8 +35,8 @@ func (s *State) Exit(code int) {
 	// only persist non-zero exit
 	if code != 0 {
 		s.Job.ExitCode = code
-		s.Job.Status = plugin.StateFailure
-		s.Build.Status = plugin.StateFailure
+		s.Job.Status = drone.StatusFailure
+		s.Build.Status = drone.StatusFailure
 	}
 }
 

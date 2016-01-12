@@ -18,7 +18,7 @@ import (
 	"github.com/drone/drone-exec/yaml/path"
 	"github.com/drone/drone-exec/yaml/secure"
 	"github.com/drone/drone-exec/yaml/shasum"
-	"github.com/drone/drone-plugin-go/plugin"
+	"github.com/drone/drone-go/drone"
 	"github.com/samalba/dockerclient"
 
 	log "github.com/Sirupsen/logrus"
@@ -27,16 +27,16 @@ import (
 // Payload defines the raw plugin payload that
 // stores the build metadata and configuration.
 type Payload struct {
-	Yaml      string            `json:"config"`
-	YamlEnc   string            `json:"secret"`
-	Repo      *plugin.Repo      `json:"repo"`
-	Build     *plugin.Build     `json:"build"`
-	BuildLast *plugin.Build     `json:"build_last"`
-	Job       *plugin.Job       `json:"job"`
-	Netrc     *plugin.Netrc     `json:"netrc"`
-	Keys      *plugin.Keypair   `json:"keys"`
-	System    *plugin.System    `json:"system"`
-	Workspace *plugin.Workspace `json:"workspace"`
+	Yaml      string           `json:"config"`
+	YamlEnc   string           `json:"secret"`
+	Repo      *drone.Repo      `json:"repo"`
+	Build     *drone.Build     `json:"build"`
+	BuildLast *drone.Build     `json:"build_last"`
+	Job       *drone.Job       `json:"job"`
+	Netrc     *drone.Netrc     `json:"netrc"`
+	Keys      *drone.Key       `json:"keys"`
+	System    *drone.System    `json:"system"`
+	Workspace *drone.Workspace `json:"workspace"`
 }
 
 // Options defines execution options.
@@ -79,12 +79,12 @@ func Exec(payload Payload, opt Options, outw, errw io.Writer) error {
 		// the checksum should be invalidated if the repository is
 		// public, and the build is a pull request, and the checksum
 		// value was not provided.
-		if payload.Build.Event == plugin.EventPull && !payload.Repo.IsPrivate && len(sec.Checksum) == 0 {
+		if payload.Build.Event == drone.EventPull && !payload.Repo.IsPrivate && len(sec.Checksum) == 0 {
 			verified = false
 		}
 
 		switch {
-		case verified && payload.Build.Event == plugin.EventPull:
+		case verified && payload.Build.Event == drone.EventPull:
 			log.Debugln("Injected secrets into Yaml safely")
 			var err error
 			payload.Yaml, err = inject.InjectSafe(payload.Yaml, sec.Environment.Map())
@@ -112,7 +112,7 @@ func Exec(payload Payload, opt Options, outw, errw io.Writer) error {
 		"BRANCH":       payload.Build.Branch,
 		"BUILD_NUMBER": strconv.Itoa(payload.Build.Number),
 	}
-	if payload.Build.Event == plugin.EventTag {
+	if payload.Build.Event == drone.EventTag {
 		injectParams["TAG"] = strings.TrimPrefix(payload.Build.Ref, "refs/tags/")
 	}
 	payload.Yaml = inject.Inject(payload.Yaml, payload.Job.Environment)
@@ -136,7 +136,7 @@ func Exec(payload Payload, opt Options, outw, errw io.Writer) error {
 	// extracts the clone path from the yaml. If
 	// the clone path doesn't exist it uses a path
 	// derrived from the repository uri.
-	payload.Workspace = &plugin.Workspace{Keys: payload.Keys, Netrc: payload.Netrc}
+	payload.Workspace = &drone.Workspace{Keys: payload.Keys, Netrc: payload.Netrc}
 	payload.Workspace.Path = path.Parse(payload.Yaml, payload.Repo.Link)
 	payload.Workspace.Root = "/drone/src"
 	log.Debugf("Using workspace %s", payload.Workspace.Path)
@@ -250,8 +250,8 @@ func Exec(payload Payload, opt Options, outw, errw io.Writer) error {
 	// if the build is not failed, at this point
 	// we can mark as successful
 	if !state.Failed() {
-		state.Job.Status = plugin.StateSuccess
-		state.Build.Status = plugin.StateSuccess
+		state.Job.Status = drone.StatusSuccess
+		state.Build.Status = drone.StatusSuccess
 	}
 
 	if opt.Cache {

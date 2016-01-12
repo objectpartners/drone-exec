@@ -8,7 +8,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/drone/drone-exec/parser"
-	"github.com/drone/drone-plugin-go/plugin"
+	"github.com/drone/drone-go/drone"
 	yamljson "github.com/ghodss/yaml"
 	"github.com/samalba/dockerclient"
 	"gopkg.in/yaml.v2"
@@ -89,7 +89,7 @@ func toEnv(s *State) []string {
 	envs = append(envs, fmt.Sprintf("CI_BUILD_URL=%s/%s/%d", s.System.Link, s.Repo.FullName, s.Build.Number))
 
 	// environment variables specific to the pull request
-	if s.Build.Event == plugin.EventPull {
+	if s.Build.Event == drone.EventPull {
 		envs = append(envs, fmt.Sprintf("CI_PULL_REQUEST=%s", pullRegexp.FindString(s.Build.Ref)))
 		envs = append(envs, fmt.Sprintf("DRONE_PULL_REQUEST=%s", pullRegexp.FindString(s.Build.Ref)))
 	}
@@ -99,7 +99,7 @@ func toEnv(s *State) []string {
 		envs = append(envs, fmt.Sprintf("%s=%s", key, val))
 	}
 
-	if s.Build.Event == plugin.EventTag {
+	if s.Build.Event == drone.EventTag {
 		tag := strings.TrimPrefix(s.Build.Ref, "refs/tags/")
 		envs = append(envs, fmt.Sprintf("CI_TAG=%d", tag))
 		envs = append(envs, fmt.Sprintf("DRONE_TAG=%s", tag))
@@ -130,7 +130,7 @@ func toCommand(s *State, n *parser.DockerNode) []string {
 		log.Debug(err)
 	}
 
-	p.System = &plugin.System{
+	p.System = &drone.System{
 		Version: s.System.Version,
 		Link:    s.System.Link,
 	}
@@ -143,11 +143,11 @@ func toCommand(s *State, n *parser.DockerNode) []string {
 // that is serialized and sent to the plugin in JSON
 // format via stdin or arg[1].
 type payload struct {
-	Workspace *plugin.Workspace `json:"workspace"`
-	System    *plugin.System    `json:"system"`
-	Repo      *plugin.Repo      `json:"repo"`
-	Build     *plugin.Build     `json:"build"`
-	Job       *plugin.Job       `json:"job"`
+	Workspace *drone.Workspace `json:"workspace"`
+	System    *drone.System    `json:"system"`
+	Repo      *drone.Repo      `json:"repo"`
+	Build     *drone.Build     `json:"build"`
+	Job       *drone.Job       `json:"job"`
 
 	Vargs map[string]interface{} `json:"vargs"`
 }

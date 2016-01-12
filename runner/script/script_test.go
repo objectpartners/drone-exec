@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/drone/drone-exec/parser"
-	"github.com/drone/drone-plugin-go/plugin"
+	"github.com/drone/drone-go/drone"
 	"github.com/franela/goblin"
 	"github.com/samalba/dockerclient"
 )
@@ -32,13 +32,13 @@ func Test_Rule(t *testing.T) {
 			n := &parser.DockerNode{
 				Commands: []string{"go build", "go test"},
 			}
-			w := &plugin.Workspace{
-				Netrc: &plugin.Netrc{
+			w := &drone.Workspace{
+				Netrc: &drone.Netrc{
 					Machine:  "foo",
 					Login:    "bar",
 					Password: "baz",
 				},
-				Keys: &plugin.Keypair{
+				Keys: &drone.Key{
 					Private: "-----BEGIN RSA PRIVATE KEY----- MIIEpQIBAAKCAQEA3Tz2...",
 				},
 			}

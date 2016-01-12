@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/drone/drone-exec/parser"
-	"github.com/drone/drone-plugin-go/plugin"
+	"github.com/drone/drone-go/drone"
 )
 
 // isMatch is a helper function that returns true if
@@ -110,7 +110,7 @@ func matchSuccess(toggle, status string) bool {
 	if err != nil {
 		return true
 	}
-	return ok && (status == plugin.StateSuccess || status == plugin.StateRunning)
+	return ok && (status == drone.StatusSuccess || status == drone.StatusRunning)
 }
 
 func matchFailure(toggle, status string) bool {
@@ -118,7 +118,7 @@ func matchFailure(toggle, status string) bool {
 	if err != nil {
 		return true
 	}
-	return ok && status != plugin.StateSuccess && status != plugin.StateRunning
+	return ok && status != drone.StatusSuccess && status != drone.StatusRunning
 }
 
 func matchChange(toggle, status, last string) bool {
@@ -127,8 +127,8 @@ func matchChange(toggle, status, last string) bool {
 		return true
 	}
 	switch status {
-	case plugin.StateRunning:
-		status = plugin.StateSuccess
+	case drone.StatusRunning:
+		status = drone.StatusSuccess
 	}
 	return ok && status != last
 }
