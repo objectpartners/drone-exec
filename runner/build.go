@@ -3,7 +3,7 @@ package runner
 import (
 	"errors"
 
-	// log "github.com/Sirupsen/logrus"
+	log "github.com/Sirupsen/logrus"
 	"github.com/drone/drone-exec/docker"
 	"github.com/drone/drone-exec/parser"
 	"github.com/drone/drone-exec/runner/script"
@@ -90,6 +90,9 @@ func (b *Build) walk(node parser.Node, state *State) (err error) {
 				state.Exit(255)
 			} else if info.State.ExitCode != 0 {
 				state.Exit(info.State.ExitCode)
+			} else if info.State.OOMKilled {
+				log.Errorln("OOMKill received. Exiting Build")
+				state.Exit(1)
 			}
 
 		case parser.NodeCompose:
