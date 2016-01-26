@@ -68,7 +68,12 @@ func Run(client dockerclient.Client, conf *dockerclient.ContainerConfig, auth *d
 			return
 		}
 		defer rc.Close()
-		StdCopy(outw, errw, rc)
+		_, err = StdCopy(outw, errw, rc)
+		if err != nil {
+			log.Errorf("Error streaming docker logs for %s. %s\n", conf.Image, err)
+			errc <- err
+			return
+		}
 
 		// fetches the container information
 		info, err := client.InspectContainer(info.Id)

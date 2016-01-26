@@ -103,6 +103,16 @@ func (b *Build) walk(node parser.Node, state *State) (err error) {
 			}
 
 		default:
+			// TODO(bradrydzewski) this should be handled by the when block
+			// by defaulting the build steps to run when not failure. This is
+			// required now that we support multi-build steps.
+			//
+			// Note we should always send notifications regardless of the
+			// build status, since people typically want failure notifications.
+			if state.Failed() && node.Type() != parser.NodeNotify {
+				return
+			}
+
 			conf := toContainerConfig(node)
 			conf.Cmd = toCommand(state, node)
 			info, err := docker.Run(state.Client, conf, auth, node.Pull, state.Stdout, state.Stderr)
