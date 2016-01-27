@@ -50,33 +50,35 @@ func newListNode() *ListNode {
 type DockerNode struct {
 	NodeType
 
-	Image       string
-	Pull        bool
-	Privileged  bool
-	Environment []string
-	Entrypoint  []string
-	Command     []string
-	Commands    []string
-	Volumes     []string
-	ExtraHosts  []string
-	Net         string
-	AuthConfig  yaml.AuthConfig
-	Vargs       map[string]interface{}
+	Image          string
+	Pull           bool
+	Privileged     bool
+	Environment    []string
+	Entrypoint     []string
+	Command        []string
+	Commands       []string
+	Volumes        []string
+	ExtraHosts     []string
+	Net            string
+	AuthConfig     yaml.AuthConfig
+	OomKillDisable bool
+	Vargs          map[string]interface{}
 }
 
 func newDockerNode(typ NodeType, c yaml.Container) *DockerNode {
 	return &DockerNode{
-		NodeType:    typ,
-		Image:       c.Image,
-		Pull:        c.Pull,
-		Privileged:  c.Privileged,
-		Environment: c.Environment.Slice(),
-		Entrypoint:  c.Entrypoint.Slice(),
-		Command:     c.Command.Slice(),
-		Volumes:     c.Volumes,
-		ExtraHosts:  c.ExtraHosts,
-		Net:         c.Net,
-		AuthConfig:  c.AuthConfig,
+		NodeType:       typ,
+		Image:          c.Image,
+		Pull:           c.Pull,
+		Privileged:     c.Privileged,
+		Environment:    c.Environment.Slice(),
+		Entrypoint:     c.Entrypoint.Slice(),
+		Command:        c.Command.Slice(),
+		Volumes:        c.Volumes,
+		ExtraHosts:     c.ExtraHosts,
+		Net:            c.Net,
+		AuthConfig:     c.AuthConfig,
+		OomKillDisable: c.OomKillDisable,
 	}
 }
 
