@@ -90,7 +90,9 @@ func (b *Build) walk(node parser.Node, state *State) (err error) {
 				state.Exit(255)
 			} else if info.State.ExitCode != 0 {
 				state.Exit(info.State.ExitCode)
-			} else if info.State.OOMKilled {
+			} else if info.State.OOMKilled && !node.OomKillDisable {
+				// NOTE: we suppress this message if OomKillDisable is enabled
+				// because older versions of Docker 1.7 are firing false positivies.
 				log.Errorln("OOMKill received. Exiting Build")
 				state.Exit(1)
 			}
