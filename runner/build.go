@@ -95,6 +95,9 @@ func (b *Build) walk(node parser.Node, state *State) (err error) {
 				// because older versions of Docker 1.7 are firing false positivies.
 				log.Errorln("OOMKill received. Exiting Build")
 				state.Exit(1)
+			} else if info.State.Running {
+				log.Errorln("Error decoding Docker logs. Exiting Build.")
+				state.Exit(1)
 			}
 
 		case parser.NodeCompose:
