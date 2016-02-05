@@ -3,6 +3,7 @@ package docker
 import (
 	"errors"
 	"io"
+	"io/ioutil"
 	"os"
 
 	log "github.com/Sirupsen/logrus"
@@ -59,6 +60,7 @@ func Run(client dockerclient.Client, conf *dockerclient.ContainerConfig, auth *d
 		// It's possible that the docker logs endpoint returns before the container
 		// is done, we'll naively resume up to 5 times if when the logs unblocks
 		// the container is still reported to be running.
+		var total int64
 		for attempts := 0; attempts < 5; attempts++ {
 
 			// blocks and waits for the container to finish
@@ -72,7 +74,20 @@ func Run(client dockerclient.Client, conf *dockerclient.ContainerConfig, auth *d
 			}
 			defer rc.Close()
 
-			_, err = StdCopy(outw, errw, rc)
+			if total != 0 {
+				// Discard off the total bytes we've received so far.
+				// io.LimitReader returns EOF once it has read the specified number
+				// of bytes as per https://golang.org/pkg/io/#LimitReader.
+				r := io.LimitReader(rc, total)
+				_, err := io.Copy(ioutil.Discard, r)
+				if err != nil && err != io.EOF {
+					log.Errorf("Error resuming streaming docker logs for %s. %s\n", conf.Image, err)
+					errc <- err
+					return
+				}
+			}
+
+			rcv, err := StdCopy(outw, errw, rc)
 			if err != nil {
 				log.Errorf("Error streaming docker logs for %s. %s\n", conf.Image, err)
 				errc <- err
@@ -92,7 +107,9 @@ func Run(client dockerclient.Client, conf *dockerclient.ContainerConfig, auth *d
 				infoc <- info
 				return
 			}
-			log.Debugf("Attempting to resume log tailing. Attempts %d.\n", attempts)
+
+			total += rcv
+			log.Debugf("Attempting to resume log tailing after receiving %d bytes. Attempts %d.\n", total, attempts)
 		}
 
 		errc <- errors.New("Maximum number of attempts made while tailing logs.")
