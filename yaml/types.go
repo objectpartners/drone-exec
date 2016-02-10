@@ -26,6 +26,8 @@ type Container struct {
 	Volumes        []string
 	Net            string
 	AuthConfig     AuthConfig `yaml:"auth_config"`
+	Memory         int64      `yaml:"mem_limit"`
+	CPUSetCPUs     string     `yaml:"cpuset"`
 	OomKillDisable bool       `yaml:"oom_kill_disable"`
 }
 
