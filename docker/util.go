@@ -3,8 +3,8 @@ package docker
 import (
 	"errors"
 	"io"
+	"io/ioutil"
 	"os"
-	// "strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/samalba/dockerclient"
@@ -57,32 +57,62 @@ func Run(client dockerclient.Client, conf *dockerclient.ContainerConfig, auth *d
 	errc := make(chan error, 1)
 	infoc := make(chan *dockerclient.ContainerInfo, 1)
 	go func() {
+		// It's possible that the docker logs endpoint returns before the container
+		// is done, we'll naively resume up to 5 times if when the logs unblocks
+		// the container is still reported to be running.
+		var total int64
+		for attempts := 0; attempts < 5; attempts++ {
 
-		// blocks and waits for the container to finish
-		// by streaming the logs (to /dev/null). Ideally
-		// we could use the `wait` function instead
-		rc, err := client.ContainerLogs(info.Id, logOptsTail)
-		if err != nil {
-			log.Errorf("Error tailing %s. %s\n", conf.Image, err)
-			errc <- err
-			return
-		}
-		defer rc.Close()
-		_, err = StdCopy(outw, errw, rc)
-		if err != nil {
-			log.Errorf("Error streaming docker logs for %s. %s\n", conf.Image, err)
-			errc <- err
-			return
+			// blocks and waits for the container to finish
+			// by streaming the logs (to /dev/null). Ideally
+			// we could use the `wait` function instead
+			rc, err := client.ContainerLogs(info.Id, logOptsTail)
+			if err != nil {
+				log.Errorf("Error tailing %s. %s\n", conf.Image, err)
+				errc <- err
+				return
+			}
+			defer rc.Close()
+
+			if total != 0 {
+				// Discard off the total bytes we've received so far.
+				// io.LimitReader returns EOF once it has read the specified number
+				// of bytes as per https://golang.org/pkg/io/#LimitReader.
+				r := io.LimitReader(rc, total)
+				_, err := io.Copy(ioutil.Discard, r)
+				if err != nil && err != io.EOF {
+					log.Errorf("Error resuming streaming docker logs for %s. %s\n", conf.Image, err)
+					errc <- err
+					return
+				}
+			}
+
+			rcv, err := StdCopy(outw, errw, rc)
+			if err != nil {
+				log.Errorf("Error streaming docker logs for %s. %s\n", conf.Image, err)
+				errc <- err
+				return
+			}
+
+			// fetches the container information
+			info, err := client.InspectContainer(info.Id)
+			if err != nil {
+				log.Errorf("Error getting exit code for %s. %s\n", conf.Image, err)
+				errc <- err
+				return
+			}
+
+			if !info.State.Running {
+				// The container is no longer running, there should be no more logs to tail.
+				infoc <- info
+				return
+			}
+
+			total += rcv
+			log.Debugf("Attempting to resume log tailing after receiving %d bytes. Attempts %d.\n", total, attempts)
 		}
 
-		// fetches the container information
-		info, err := client.InspectContainer(info.Id)
-		if err != nil {
-			log.Errorf("Error getting exit code for %s. %s\n", conf.Image, err)
-			errc <- err
-			return
-		}
-		infoc <- info
+		errc <- errors.New("Maximum number of attempts made while tailing logs.")
 	}()
 
 	select {
