@@ -3,7 +3,6 @@ package docker
 import (
 	"errors"
 	"io"
-	"io/ioutil"
 	"os"
 
 	log "github.com/Sirupsen/logrus"
@@ -18,14 +17,6 @@ var (
 var (
 	// options to fetch the stdout and stderr logs
 	logOpts = &dockerclient.LogOptions{
-		Stdout: true,
-		Stderr: true,
-	}
-
-	// options to fetch the stdout and stderr logs
-	// by tailing the output.
-	logOptsTail = &dockerclient.LogOptions{
-		Follow: true,
 		Stdout: true,
 		Stderr: true,
 	}
@@ -57,11 +48,23 @@ func Run(client dockerclient.Client, conf *dockerclient.ContainerConfig, auth *d
 	errc := make(chan error, 1)
 	infoc := make(chan *dockerclient.ContainerInfo, 1)
 	go func() {
+		// options to fetch the stdout and stderr logs
+		// by tailing the output.
+		logOptsTail := &dockerclient.LogOptions{
+			Follow: true,
+			Stdout: true,
+			Stderr: true,
+		}
+
 		// It's possible that the docker logs endpoint returns before the container
 		// is done, we'll naively resume up to 5 times if when the logs unblocks
 		// the container is still reported to be running.
-		var total int64
 		for attempts := 0; attempts < 5; attempts++ {
+			if attempts > 0 {
+				// When resuming the stream, only grab the last line when starting
+				// the tailing.
+				logOptsTail.Tail = 1
+			}
 
 			// blocks and waits for the container to finish
 			// by streaming the logs (to /dev/null). Ideally
@@ -74,20 +77,7 @@ func Run(client dockerclient.Client, conf *dockerclient.ContainerConfig, auth *d
 			}
 			defer rc.Close()
 
-			if total != 0 {
-				// Discard off the total bytes we've received so far.
-				// io.LimitReader returns EOF once it has read the specified number
-				// of bytes as per https://golang.org/pkg/io/#LimitReader.
-				r := io.LimitReader(rc, total)
-				_, err := io.Copy(ioutil.Discard, r)
-				if err != nil && err != io.EOF {
-					log.Errorf("Error resuming streaming docker logs for %s. %s\n", conf.Image, err)
-					errc <- err
-					return
-				}
-			}
-
-			rcv, err := StdCopy(outw, errw, rc)
+			_, err = StdCopy(outw, errw, rc)
 			if err != nil {
 				log.Errorf("Error streaming docker logs for %s. %s\n", conf.Image, err)
 				errc <- err
@@ -108,8 +98,7 @@ func Run(client dockerclient.Client, conf *dockerclient.ContainerConfig, auth *d
 				return
 			}
 
-			total += rcv
-			log.Debugf("Attempting to resume log tailing after receiving %d bytes. Attempts %d.\n", total, attempts)
+			log.Debugf("Attempting to resume log tailing after %d attempts.\n", attempts)
 		}
 
 		errc <- errors.New("Maximum number of attempts made while tailing logs.")
